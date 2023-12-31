@@ -1,0 +1,13 @@
+fastapi
+uvicorn
+sqlalchemy
+sqlalchemy-stubs
+pyright
+xlwings
+pydantic<2.0
+python-jose[cryptography]
+passlib[bcrypt]
+pytest
+python-multipart
+requests
+httpx

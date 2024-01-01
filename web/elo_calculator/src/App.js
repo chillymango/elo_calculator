@@ -8,7 +8,7 @@ function App() {
   const [summary, setSummary] = useState({ ordered_players: [], match_history: []});
 
   useEffect(() => {
-    fetch('http://localhost:8000/summary')
+    fetch('https://elo.alberthyang.com:8000/summary')
       .then(response => response.json())
       .then(data => {
         let thing = JSON.parse(data.response_json_str)

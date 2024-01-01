@@ -17,7 +17,7 @@ function AdminButtons() {
     const fetchPlayers = async () => {
         console.info('Fetching players')
         try {
-            const response = await fetch('http://localhost:8000/players');
+            const response = await fetch('https://elo.alberthyang.com:8000/players');
             if (!response.ok) {
             throw new Error('Players data fetch failed');
             }
@@ -35,7 +35,7 @@ function AdminButtons() {
 
     const handleAddPlayer = async () => {
         try {
-            const response = await fetch('http://localhost:8000/add_player', {
+            const response = await fetch('https://elo.alberthyang.com:8000/add_player', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -50,7 +50,7 @@ function AdminButtons() {
 
     const handleRecordMatch = async () => {
         try {
-            const response = await fetch('http://localhost:8000/match', {
+            const response = await fetch('https://elo.alberthyang.com:8000/match', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -73,7 +73,7 @@ function AdminButtons() {
         }
 
         try {
-          const response = await fetch('http://localhost:8000/is_authorized', {
+          const response = await fetch('https://elo.alberthyang.com:8000/is_authorized', {
             headers: {
                 'Authorization': `Bearer ${token}`
             }
@@ -91,7 +91,7 @@ function AdminButtons() {
     }, []);
 
     return <div>
-        <Button variant="contained" onClick={() => setOpenAddPlayer(true)} style={{ margin: 10 }}>
+        <Button variant="contained" onClick={() => setOpenAddPlayer(true)} style={{ margin: 10 }} sx={{display: isAuthorized?null:'none'}}>
         Add Player
         </Button>
         
@@ -115,7 +115,7 @@ function AdminButtons() {
         </DialogActions>
         </Dialog>
         
-        <Button variant="contained" onClick={() => setOpenRecordMatch(true)} style={{ margin: 10 }}>
+        <Button variant="contained" onClick={() => setOpenRecordMatch(true)} style={{ margin: 10 }} sx={{display: isAuthorized?null:'none'}}>
         Record Match
         </Button>
         

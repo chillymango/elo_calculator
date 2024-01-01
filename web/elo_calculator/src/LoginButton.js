@@ -17,7 +17,7 @@ function LoginButton() {
 
     const handleLogin = async () => {
         try {
-          const response = await fetch('/token', {
+          const response = await fetch('https://elo.alberthyang.com:8000/token', {
             method: 'POST',
             headers: {
               'Content-Type': 'application/x-www-form-urlencoded',

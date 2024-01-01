@@ -10,10 +10,10 @@ def create_app() -> FastAPI:
         summary,
     )
     app = FastAPI()
-    app.include_router(auth.router)
-    app.include_router(match.router)
-    app.include_router(player.router)
-    app.include_router(summary.router)
+    app.include_router(auth.router, prefix="/api")
+    app.include_router(match.router, prefix="/api")
+    app.include_router(player.router, prefix="/api")
+    app.include_router(summary.router, prefix="/api")
 
     # TODO: fix
     origins = ["*"]

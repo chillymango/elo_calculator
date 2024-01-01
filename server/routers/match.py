@@ -28,7 +28,7 @@ def undo_last_match_results(db: Session = Depends(get_database), cache=Depends(u
     """
     Undo the last match
     """
-    match = db.query(Match).order_by(Match.created_at).first()
+    match = db.query(Match).order_by(Match.created_at.desc()).first()
     db.delete(match)
     db.commit()
     return Response.success()

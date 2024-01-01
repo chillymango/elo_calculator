@@ -15,7 +15,7 @@ def main():
     loser_name = ' '.join(word.capitalize() for word in args.loser)
 
     match_result = MatchResult(winner=winner_name, loser=loser_name)
-    resp = requests.post(f"{args.host}/match", json=match_result.dict())
+    resp = requests.post(f"{args.host}/api/match", json=match_result.dict())
     resp.raise_for_status()
     print(f"Successfully recorded {winner_name} beating {loser_name}")
 

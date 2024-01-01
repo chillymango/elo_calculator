@@ -9,7 +9,7 @@ def main():
     parser.add_argument("--host", default="http://localhost:8000")
     args = parser.parse_args()
 
-    resp = requests.post(f"{args.host}/undo")
+    resp = requests.post(f"{args.host}/api/undo")
     resp.raise_for_status()
     print(f"Successful undo")
 

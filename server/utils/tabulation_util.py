@@ -27,7 +27,8 @@ def update_cache(cache: dict[Any, Any], db: Session) -> None:
         loss[loser.name] += 1
         # no farming noobs
         decay_factor = (wins[winner.name] + wins[loser.name] + loss[winner.name] + loss[loser.name]) // 2
-        k_elo = max(16, env.ELO_K_VALUE_CEILING // decay_factor)
+        #k_elo = max(16, env.ELO_K_VALUE_CEILING // decay_factor)
+        k_elo = 128
         print(k_elo)
         new_winner_elo, new_loser_elo = elo_util.calculate_elo(elo[winner.name], elo[loser.name], k_elo)
         elo[winner.name] = new_winner_elo

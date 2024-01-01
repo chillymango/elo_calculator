@@ -23,7 +23,7 @@ def record_match_result(result: MatchResultDto, db: Session = Depends(get_databa
     return Response.success()
 
 
-@router.match("/undo", response_model=Response)
+@router.post("/undo", response_model=Response)
 def undo_last_match_results(db: Session = Depends(get_database), cache=Depends(update_cache)):
     """
     Undo the last match

@@ -5,15 +5,19 @@ from fastapi.middleware.cors import CORSMiddleware
 def create_app() -> FastAPI:
     from server.routers import (
         auth,
+        game,
         match,
         player,
         summary,
+        user_session,
     )
     app = FastAPI()
     app.include_router(auth.router, prefix="/api")
+    app.include_router(game.router, prefix="/api")
     app.include_router(match.router, prefix="/api")
     app.include_router(player.router, prefix="/api")
     app.include_router(summary.router, prefix="/api")
+    app.include_router(user_session.router, prefix="/api")
 
     # TODO: fix
     origins = ["*"]

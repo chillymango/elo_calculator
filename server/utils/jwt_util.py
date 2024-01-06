@@ -14,10 +14,14 @@ ACCESS_TOKEN_EXPIRE_MINUTES = env.TOKEN_EXPIRY_MINUTES
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
 
-def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
+def create_access_token(data: dict, expires_delta: Optional[timedelta] = None, expires_at: Optional[datetime] = None):
+    if expires_delta and expires_at:
+        raise ValueError("Cannot provide both `expires_delta` and `expires_at`")
     to_encode = data.copy()
     if expires_delta:
         expire = datetime.utcnow() + expires_delta
+    elif expires_at:
+        expire = expires_at
     else:
         expire = datetime.utcnow() + timedelta(minutes=15)
     to_encode.update({"exp": expire})

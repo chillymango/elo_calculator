@@ -9,7 +9,7 @@ class LoginRequest(BaseModel):
     new one will be created for them. This user id is returned for
     their reference.
     """
-    user_id: UUID | None = None
+    user_id: str | None = None
     name: str
 
 

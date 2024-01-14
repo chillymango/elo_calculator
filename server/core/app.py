@@ -3,7 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 
 def create_app() -> FastAPI:
-    from server.routers import (
+    from server.routers.api import (
         auth,
         game,
         match,

@@ -5,6 +5,7 @@ This is intended for use with the game router endpoint
 """
 import asyncio
 import logging
+from collections import defaultdict
 from enum import Enum
 from typing import Any
 from uuid import UUID, uuid4
@@ -74,12 +75,11 @@ class Subscription:
         self._stale.set()
 
     async def run(self):
+        self._stale.set()
         while True:
             await self._stale.wait()
             self._stale.clear()
-            # read the latest value from game and publish it??
-            # TODO: publish an update message instead of printing out
-            print(self._game_cache.get(self._game.uuid))
+            await self._websocket.send_json(self._game_cache.get(self._game.uuid))
 
 
 class Role(Enum):
@@ -100,17 +100,32 @@ class WebSocketManager:
     _subscriptions: dict[UUID, Subscription]
     # map of game id to subscriptions for that game
     _game_to_subs: dict[UUID, list[Subscription]]
+    # a map of user id to user role
+    _user_roles: dict[UUID, Role]
 
     def __init__(self, game_manager: GameManager):
         self._game_manager = game_manager
         self._subscriptions = dict()
-        self._game_to_subs = dict()
-        self._game_manager.register_subscriber(self._update_subscribers)
+        self._game_to_subs = defaultdict(list)
+        self._game_manager.register_subscriber(self.update_subscribers)
+        self._user_roles = dict()
 
     async def handshake(self, websocket: WebSocket, game_id: UUID, user_id: UUID) -> Role:
         """
         Perform the initial handshake.
         """
+        role = await self._handshake_and_get_role(websocket, game_id, user_id)
+        if role != Role.FORBIDDEN:
+            self._user_roles[user_id] = role
+        return role    
+
+    def update_user_role(self, user_id: UUID, role: Role):
+        if user_id not in self._user_roles:
+            logger.warning(f"Attempted to update {user_id} to {role} but user does not currently have a role")
+            return
+        self._user_roles[user_id] = role
+
+    async def _handshake_and_get_role(self, websocket: WebSocket, game_id: UUID, user_id: UUID) -> Role:
         game = self._game_manager.get_game_by_id(game_id)
     
         # TODO: consider if we should not let players connect to finished games
@@ -127,7 +142,7 @@ class WebSocketManager:
         # TODO: handle some additional authorization?
         return Role.SPECTATOR
 
-    def _update_subscribers(self, game: GameState):
+    def update_subscribers(self, game: GameState):
         """
         Find all subscriptions for a specific game and flag them to update.
         """
@@ -149,14 +164,15 @@ class WebSocketManager:
         sub.start()
         self._subscriptions[sub_id] = sub
         self._game_to_subs[game_id].append(sub)
+        return sub_id
 
     def unsubscribe(self, sub_id: UUID, game_id: UUID):
         sub = self._subscriptions.pop(sub_id, None)
         if sub is None:
             logger.warning(f"Could not find subscription with uuid {sub_id}")
             return
-        game_subs = self._subscriptions[game_id]
         sub.stop()
+        game_subs = self._game_to_subs[game_id]
         if sub not in game_subs:
             logger.warning(f"Could not find subscription with uuid {sub_id} in game subs for {game_id}")
 

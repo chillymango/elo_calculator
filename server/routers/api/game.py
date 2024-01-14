@@ -1,17 +1,22 @@
-# Expose a few different APIs in this router
-#
-# 1. Create a game.
-# 2. Join a game as some color (???)
-#    This should probably be a websocket???
+import asyncio
 import logging
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, WebSocket
+from fastapi.exceptions import HTTPException
+from starlette.websockets import WebSocketDisconnect
 
-from server.core.dependencies import get_websocket_manager, get_game_manager, session_auth
+from server.core.dependencies import get_websocket_manager, get_game_manager, session_auth, validate_token
 from server.core.game import GameManager
 from server.core.websocket_manager import Role, WebSocketManager
-from server.models.dto.game import CreateGameRequest, CreateGameResponse, ListGamesResponse
+from server.models.dto.game import (
+    CreateGameRequest,
+    CreateGameResponse,
+    ListGamesResponse,
+    GetGameByCodeRequest,
+    GetGameByCodeResponse,
+)
+from server.models.orm.game import GameState
 
 router = APIRouter()
 
@@ -32,19 +37,44 @@ async def get_games(_: UUID = Depends(session_auth), game_manager: GameManager =
 
 @router.post("/game", response_model=CreateGameResponse)
 async def create_game(
-    request: CreateGameRequest,
+    _: CreateGameRequest,
+    player_id: UUID = Depends(session_auth),
+    game_manager: GameManager = Depends(get_game_manager)
+):
+    game = game_manager.create_game(player_id)
+    return CreateGameResponse(code=200, game_id=game.uuid)
+
+
+@router.get("/game/code", response_model=GetGameByCodeResponse)
+async def get_game_code(
+    code: str,
     _: UUID = Depends(session_auth),
     game_manager: GameManager = Depends(get_game_manager)
 ):
-    game = game_manager.create_game()
-    return CreateGameResponse(code=200, game_id=game.uuid)
+    game = game_manager.get_game_by_code(code)
+    if game is None:
+        raise ValueError(f"No game found with code {code}")
+    return GetGameByCodeResponse(game_id=game.uuid)
+
+
+@router.get("/game/{uuid}", response_model=GameState)
+async def get_game(
+    uuid: str,
+    _: UUID = Depends(session_auth),
+    game_manager: GameManager = Depends(get_game_manager)
+):
+    game_id = UUID(uuid)
+    game = game_manager.get_game_by_id(game_id)
+    if game is None:
+        raise ValueError("Game with provided id does not exist")
+    return game
 
 
 @router.websocket("/game/{uuid}/ws")
 async def websocket_game(
     websocket: WebSocket,
     uuid: str,
-    user_id: UUID = Depends(session_auth),
+    token: str,
     websocket_manager: WebSocketManager = Depends(get_websocket_manager),
 ):
     """
@@ -63,11 +93,17 @@ async def websocket_game(
     If the user id does not match any of the ids, they will only receive
     game state updates.
 
-    User commands should be broken into request / response pairs.
+    Commands are asynchronous and do not come with any explicit response feedback.
     """
     game_id = UUID(uuid)
-    role = await websocket_manager.handshake(game_id, user_id)
+    try:
+        user_id = session_auth(validate_token(token))
+    except HTTPException:
+        logger.error("Invalid token")
+        await websocket.close(code=1008, reason="Invalid token")
+        return
 
+    role = await websocket_manager.handshake(websocket, game_id, user_id)
     if role == Role.FORBIDDEN:
         logger.warning(f"Failed to establish role for connected player {user_id} and game {game_id}")
         await websocket.close(code=1008)
@@ -76,14 +112,18 @@ async def websocket_game(
 
     # after handshake success, register subscription
     sub_id = websocket_manager.subscribe(websocket, game_id)
-
     # start listening for commands
     try:
         while True:
             try:
                 data = await websocket.receive_json()
                 await websocket_manager.dispatch(data, role)
-            except:
+            except WebSocketDisconnect:
+                logger.debug(f"WebSocket disconnect for user {str(user_id)}")
+                break
+            except Exception as exc:
+                print(f"{type(exc)} - {repr(exc)}")
+                await asyncio.sleep(1.0)
                 logger.warning(f"Failed to read message from remote???")
     finally:
         websocket_manager.unsubscribe(sub_id, game_id)

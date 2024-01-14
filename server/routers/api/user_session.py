@@ -1,4 +1,4 @@
-from uuid import uuid4
+from uuid import uuid4, UUID
 
 from fastapi import APIRouter, Depends
 
@@ -33,6 +33,8 @@ def api_login(
     a name to the login endpoint. A user session is then created for the user if the
     login flow succeeds, and they are returned a user session object.
     """
-    user_id = request.user_id or uuid4()
+    # TODO: mobile app is not currently capable of sending null values in serialization.
+    # We adjust for this here by making the request uuid type a str type and casting it.
+    user_id = (UUID(request.user_id) if request.user_id else None) or uuid4()
     session, token = user_session_manager.login(user_id, request.name)
     return LoginResponse(code=200, message="successful login", session=session, token=token)

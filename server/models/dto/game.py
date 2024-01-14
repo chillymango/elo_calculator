@@ -15,3 +15,11 @@ class CreateGameResponse(BaseModel):
 
 class ListGamesResponse(BaseModel):
     game_ids: list[UUID] = Field(default_factory=list)
+
+
+class GetGameByCodeRequest(BaseModel):
+    game_code: str
+
+
+class GetGameByCodeResponse(BaseModel):
+    game_id: UUID

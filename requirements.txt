@@ -11,4 +11,4 @@ pytest
 python-multipart
 requests
 httpx
-websocket
+websockets
